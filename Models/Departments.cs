@@ -11,14 +11,12 @@ namespace PMSAPI.Models
     {
         public Departments()
         {
-            Appointment = new HashSet<Appointment>();
             Doctor = new HashSet<Doctor>();
         }
 
         public byte DepartmentId { get; set; }
         public string DepartmentName { get; set; }
 
-        public virtual ICollection<Appointment> Appointment { get; set; }
         public virtual ICollection<Doctor> Doctor { get; set; }
     }
 }

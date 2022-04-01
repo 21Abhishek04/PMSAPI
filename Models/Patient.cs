@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 // Code scaffolded by EF Core assumes nullable reference types (NRTs) are not used or disabled.
 // If you have enabled NRTs for your project, then un-comment the following line:
@@ -9,11 +10,7 @@ namespace PMSAPI.Models
 {
     public partial class Patient
     {
-        public Patient()
-        {
-            Appointment = new HashSet<Appointment>();
-        }
-
+        [Key]
         public string PatientId { get; set; }
         public string PatientName { get; set; }
         public string Password { get; set; }
@@ -24,6 +21,5 @@ namespace PMSAPI.Models
         public long? PhoneNumber { get; set; }
 
         public virtual BloodGroups BloodGroup { get; set; }
-        public virtual ICollection<Appointment> Appointment { get; set; }
     }
 }

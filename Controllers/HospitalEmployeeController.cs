@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PMSAPI.Models;
 using System;
 using System.Collections.Generic;
@@ -15,11 +16,13 @@ namespace PMSAPI.Controllers
     public class HospitalEmployeeController : ControllerBase
     {
 
+        private IConfiguration _config;
         public PMSWEBContext db;
 
-        public HospitalEmployeeController(PMSWEBContext db1)
+        public HospitalEmployeeController(IConfiguration config, PMSWEBContext _db)
         {
-            db = db1;
+            _config = config;
+            db = _db;
         }
 
         [HttpGet]
@@ -56,14 +59,10 @@ namespace PMSAPI.Controllers
 
         }
 
-
-
-        
-
         [HttpDelete("{id}")]
         public IActionResult Delete(string id)
         {
-            var dept = db.Doctor.Where(x => x.DoctorId == id).Single<Doctor>();
+            var dept =db.Doctor.Where(x => x.DoctorId == id).Single<Doctor>();
             db.Doctor.Remove(dept);
             db.SaveChanges();
             return Ok();
@@ -96,11 +95,12 @@ namespace PMSAPI.Controllers
         [HttpGet("PatientById/{Id}")]
         public IActionResult GetPatientById(string Id)
         {
-            var dep = db.Patient.FirstOrDefault(x => x.PatientId == Id);
+            var dep = db.Patient.Where(x => x.PatientId == Id);
 
 
             return Ok(dep);
         }
+
 
 
     }

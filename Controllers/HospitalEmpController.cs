@@ -1,10 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using PMSAPI.Models;
 
 namespace PMSAPI.Controllers
@@ -13,25 +19,32 @@ namespace PMSAPI.Controllers
     [ApiController]
     public class HospitalEmpController : ControllerBase
     {
-        private readonly PMSWEBContext _context;
 
-        public HospitalEmpController(PMSWEBContext context)
+        private IConfiguration _config;
+        private readonly PMSWEBContext db;
+
+        public HospitalEmpController(IConfiguration config, PMSWEBContext _db)
         {
-            _context = context;
+            _config = config;
+            db = _db;
         }
+
+
+
+
 
         // GET: api/HospitalEmp
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Doctor>>> GetDoctor()
         {
-            return await _context.Doctor.ToListAsync();
+            return await db.Doctor.ToListAsync();
         }
 
         // GET: api/HospitalEmp/5
-        [HttpGet("{id}")]
+        [HttpGet("GetDoctorById/{id}")]
         public async Task<ActionResult<Doctor>> GetDoctor(string id)
         {
-            var doctor = await _context.Doctor.FindAsync(id);
+            var doctor = await db.Doctor.FindAsync(id);
 
             if (doctor == null)
             {
@@ -44,19 +57,22 @@ namespace PMSAPI.Controllers
         // PUT: api/HospitalEmp/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutDoctor(string id, Doctor doctor)
+        [HttpPut("PutDoctor/{id}")]
+        public async Task<IActionResult> PutDoctors(string id, Doctor doctor)
         {
-            if (id != doctor.DoctorId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(doctor).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != doctor.DoctorId)
+                {
+                    return BadRequest();
+                }
+                else
+                {
+                    db.Entry(doctor).State = EntityState.Modified;
+                   var res= await db.SaveChangesAsync();
+                    return Ok(res);
+                }
+
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -68,9 +84,9 @@ namespace PMSAPI.Controllers
                 {
                     throw;
                 }
-            }
 
-            return NoContent();
+            }
+            
         }
 
         // POST: api/HospitalEmp
@@ -79,10 +95,10 @@ namespace PMSAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<Doctor>> PostDoctor(Doctor doctor)
         {
-            _context.Doctor.Add(doctor);
+            db.Doctor.Add(doctor);
             try
             {
-                await _context.SaveChangesAsync();
+                await db.SaveChangesAsync();
             }
             catch (DbUpdateException)
             {
@@ -103,28 +119,28 @@ namespace PMSAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<Doctor>> DeleteDoctor(string id)
         {
-            var doctor = await _context.Doctor.FindAsync(id);
+            var doctor = await db.Doctor.FindAsync(id);
             if (doctor == null)
             {
                 return NotFound();
             }
 
-            _context.Doctor.Remove(doctor);
-            await _context.SaveChangesAsync();
+            db.Doctor.Remove(doctor);
+            await db.SaveChangesAsync();
 
             return doctor;
         }
 
         private bool DoctorExists(string id)
         {
-            return _context.Doctor.Any(e => e.DoctorId == id);
+            return db.Doctor.Any(e => e.DoctorId == id);
         }
 
 
         [HttpGet("GetPatient")]
         public IActionResult GetPatients()
         {
-            return Ok(_context.Patient);
+            return Ok(db.Patient);
         }
 
         [HttpPost("AddPatient")]
@@ -133,8 +149,8 @@ namespace PMSAPI.Controllers
             try
             {
 
-                _context.Patient.Add(patient);
-                _context.SaveChanges();
+                db.Patient.Add(patient);
+                db.SaveChanges();
                 return Ok();
             }
             catch (Exception e)
@@ -148,11 +164,98 @@ namespace PMSAPI.Controllers
         [HttpGet("PatientById/{Id}")]
         public IActionResult GetPatientById(string Id)
         {
-            var dep = _context.Patient.FirstOrDefault(x => x.PatientId == Id);
+            var dep = db.Patient.FirstOrDefault(x => x.PatientId == Id);
 
 
             return Ok(dep);
         }
 
+        [HttpPut("PutPatient/{id}")]
+        public async Task<IActionResult> PutPatient(string id, Patient patient)
+        {
+            try
+            {
+                if (id != patient.PatientId)
+                {
+                    return BadRequest();
+                }
+                else
+                {
+                    db.Entry(patient).State = EntityState.Modified;
+                    var res = await db.SaveChangesAsync();
+                    return Ok(res);
+                }
+
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!PatientExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+
+            }
+
+        }
+
+        private bool PatientExists(string id)
+        {
+            return db.Patient.Any(e => e.PatientId == id);
+        }
+
+
+        [AllowAnonymous]
+        [HttpPost("Login")]
+        public IActionResult Login([FromBody] AdminLogin adminLogin)
+        {
+            var user = Authenticate(adminLogin);
+
+            if (user != null)
+            {
+                var token = Generate(user);
+                return Ok(token);
+            }
+
+            return NotFound("User not found");
+        }
+
+        private string Generate(HospitalEmployee hospitalEmployee)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, hospitalEmployee.HemployeeName),
+                new Claim(ClaimTypes.Name, hospitalEmployee.Password)
+
+            };
+
+            var token = new JwtSecurityToken(_config["Jwt:Issuer"],
+              _config["Jwt:Audience"],
+              claims,
+              expires: DateTime.Now.AddMinutes(15),
+              signingCredentials: credentials);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private HospitalEmployee Authenticate(AdminLogin adminLogin)
+        {
+            var currentUser = db.HospitalEmployee.FirstOrDefault(o => o.HemployeeName.ToLower() == adminLogin.HemployeeName.ToLower() && o.Password == adminLogin.Password);
+
+            if (currentUser != null)
+            {
+                return currentUser;
+            }
+
+            return null;
+        }
+
     }
+
 }

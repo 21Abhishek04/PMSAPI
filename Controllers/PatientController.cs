@@ -14,49 +14,62 @@ using System.Threading.Tasks;
 
 namespace PMSAPI.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
-    public class DoctorController : ControllerBase
+    public class PatientController : ControllerBase
     {
+        
+        
+            private IConfiguration _config;
+            public PMSWEBContext db;
+
+            public PatientController(IConfiguration config, PMSWEBContext _db)
+            {
+                _config = config;
+                db = _db;
+            }
 
 
-        private readonly IConfiguration _config;
-        private readonly PMSWEBContext db;
 
-        public DoctorController(IConfiguration config, PMSWEBContext _db)
+       //[HttpGet]
+       // public IActionResult Get()
+       // {
+       //     return Ok(db.Patient);
+       // }
+
+        [HttpPost("AddPatient")]
+        public IActionResult AddPatient(Patient patient)
         {
-            _config = config;
-            db = _db;
+            db.Patient.Add(patient);
+            db.SaveChanges();
+            return Ok();
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetPatientById(string id)
+
+        [HttpGet("GetById/{Id}")]
+        public IActionResult GetById(string Id)
         {
-            var dep = db.Patient.Where(x => x.PatientId == id);
+            var dep = db.Patient.FirstOrDefault(x => x.PatientId == Id);
             return Ok(dep);
         }
 
 
-        [HttpGet("DepartmentId/{id}")]
-        public IActionResult GetDepartmentId(byte id)
+        [HttpPost("BookAppointment")]
+        [Authorize("Patient")]
+        public IActionResult BookAppointment(Appointment appointment)
         {
-            var dep = db.Doctor.FirstOrDefault(x => x.DepartmentId == id);
-            return Ok(dep);
-        }
-
-        [HttpGet]
-        public IActionResult Get()
-        {
-            
-            return Ok(db.Doctor);
+            db.Appointment.Add(appointment);
+            db.SaveChanges();
+            return Ok();
         }
 
 
         [AllowAnonymous]
         [HttpPost("Login")]
-        public IActionResult Login([FromBody] DoctorLogin doctorLogin)
+        public IActionResult Login([FromBody] PatientLogin patientLogin)
         {
-            var user = Authenticate(doctorLogin);
+            var user = Authenticate(patientLogin);
 
             if (user != null)
             {
@@ -67,15 +80,15 @@ namespace PMSAPI.Controllers
             return NotFound("User not found");
         }
 
-        private string Generate(Doctor doctor)
+        private string Generate(Patient patient)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, doctor.DoctorName),
-                new Claim(ClaimTypes.Name, doctor.Password)
+                new Claim(ClaimTypes.NameIdentifier, patient.PatientName),
+                new Claim(ClaimTypes.Name, patient.Password)
 
             };
 
@@ -88,9 +101,9 @@ namespace PMSAPI.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private Doctor Authenticate(DoctorLogin doctorLogin)
+        private Patient Authenticate(PatientLogin patientLogin)
         {
-            var currentUser = db.Doctor.FirstOrDefault(o => o.DoctorName.ToLower() == doctorLogin.DoctorName.ToLower() && o.Password == doctorLogin.Password);
+            var currentUser = db.Patient.FirstOrDefault(o => o.PatientName.ToLower() == patientLogin.PatientName.ToLower() && o.Password == patientLogin.Password);
 
             if (currentUser != null)
             {
@@ -101,4 +114,5 @@ namespace PMSAPI.Controllers
         }
     }
 
+ 
 }

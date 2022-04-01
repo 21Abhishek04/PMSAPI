@@ -39,12 +39,13 @@ namespace PMSAPI.Models
         {
             modelBuilder.Entity<Appointment>(entity =>
             {
-                entity.Property(e => e.AppointmentId)
-                    .HasColumnName("AppointmentID")
-                    .HasMaxLength(6)
-                    .IsUnicode(false);
+                entity.HasNoKey();
 
                 entity.Property(e => e.AppointmentDate).HasColumnType("datetime");
+
+                entity.Property(e => e.AppointmentId)
+                    .HasColumnName("AppointmentID")
+                    .ValueGeneratedOnAdd();
 
                 entity.Property(e => e.ConsultationFees)
                     .HasColumnName("Consultation_Fees")
@@ -64,19 +65,19 @@ namespace PMSAPI.Models
                     .IsUnicode(false);
 
                 entity.HasOne(d => d.Department)
-                    .WithMany(p => p.Appointment)
+                    .WithMany()
                     .HasForeignKey(d => d.DepartmentId)
-                    .HasConstraintName("FK__Appointme__Depar__1CF15040");
+                    .HasConstraintName("FK__Appointme__Depar__74AE54BC");
 
                 entity.HasOne(d => d.Doctor)
-                    .WithMany(p => p.Appointment)
+                    .WithMany()
                     .HasForeignKey(d => d.DoctorId)
-                    .HasConstraintName("FK__Appointme__Docto__1DE57479");
+                    .HasConstraintName("FK__Appointme__Docto__75A278F5");
 
                 entity.HasOne(d => d.Patient)
-                    .WithMany(p => p.Appointment)
+                    .WithMany()
                     .HasForeignKey(d => d.PatientId)
-                    .HasConstraintName("FK__Appointme__Patie__1BFD2C07");
+                    .HasConstraintName("FK__Appointme__Patie__73BA3083");
             });
 
             modelBuilder.Entity<BloodGroups>(entity =>
@@ -186,7 +187,7 @@ namespace PMSAPI.Models
                 entity.HasOne(d => d.BloodGroup)
                     .WithMany(p => p.Patient)
                     .HasForeignKey(d => d.BloodGroupId)
-                    .HasConstraintName("FK__Patient__BloodGr__164452B1");
+                    .HasConstraintName("FK__Patient__BloodGr__656C112C");
             });
 
             OnModelCreatingPartial(modelBuilder);
