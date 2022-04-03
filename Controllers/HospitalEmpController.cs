@@ -17,6 +17,7 @@ namespace PMSAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+
     public class HospitalEmpController : ControllerBase
     {
 
@@ -32,9 +33,8 @@ namespace PMSAPI.Controllers
 
 
 
-
-        // GET: api/HospitalEmp
-        [HttpGet]
+    // GET: api/HospitalEmp
+    [HttpGet]
         public async Task<ActionResult<IEnumerable<Doctor>>> GetDoctor()
         {
             return await db.Doctor.ToListAsync();
@@ -89,6 +89,24 @@ namespace PMSAPI.Controllers
             
         }
 
+ 
+
+        // DELETE: api/HospitalEmp/5
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<Doctor>> DeleteDoctor(string id)
+        {
+            var doctor = await db.Doctor.FindAsync(id);
+            if (doctor == null)
+            {
+                return NotFound();
+            }
+
+            db.Doctor.Remove(doctor);
+            await db.SaveChangesAsync();
+
+            return doctor;
+        }
+
         // POST: api/HospitalEmp
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
@@ -115,25 +133,16 @@ namespace PMSAPI.Controllers
             return CreatedAtAction("GetDoctor", new { id = doctor.DoctorId }, doctor);
         }
 
-        // DELETE: api/HospitalEmp/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<Doctor>> DeleteDoctor(string id)
-        {
-            var doctor = await db.Doctor.FindAsync(id);
-            if (doctor == null)
-            {
-                return NotFound();
-            }
-
-            db.Doctor.Remove(doctor);
-            await db.SaveChangesAsync();
-
-            return doctor;
-        }
-
         private bool DoctorExists(string id)
         {
             return db.Doctor.Any(e => e.DoctorId == id);
+        }
+
+
+        [HttpGet("GetAppointments")]
+        public IActionResult GetAppointments()
+        {
+            return Ok(db.Appointment);
         }
 
 
@@ -204,8 +213,17 @@ namespace PMSAPI.Controllers
 
         private bool PatientExists(string id)
         {
-            return db.Patient.Any(e => e.PatientId == id);
+            return db.Patient.Any(e => e.PatientId == id); 
         }
+
+        [HttpGet("SearchPatient")]
+        public IActionResult GetPatient(string Search)
+        {
+
+            var dep = db.Patient.Where(x => x.PatientId.StartsWith(Search) || Search == null).ToList();
+            return Ok(dep);
+        }
+
 
 
         [AllowAnonymous]

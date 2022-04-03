@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PMSAPI.Models;
@@ -17,6 +18,7 @@ namespace PMSAPI.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
+
     public class PatientController : ControllerBase
     {
         
@@ -39,30 +41,87 @@ namespace PMSAPI.Controllers
        // }
 
         [HttpPost("AddPatient")]
+
         public IActionResult AddPatient(Patient patient)
         {
+            if (patient.PatientId == null)
+            {
+                return NotFound();
+            }
             db.Patient.Add(patient);
-            db.SaveChanges();
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (DbUpdateException)
+            {
+                if (PatientExists(patient.PatientId))
+                {
+                    return Conflict();
+                }
+                else
+                {
+                    throw;
+                }
+            }
             return Ok();
+        }
+        private bool PatientExists(string id)
+        {
+            return db.Patient.Any(e => e.PatientId == id);
         }
 
 
         [HttpGet("GetById/{Id}")]
         public IActionResult GetById(string Id)
         {
-            var dep = db.Patient.FirstOrDefault(x => x.PatientId == Id);
+            var dep = db.Patient.Where(x => x.PatientId == Id);
             return Ok(dep);
         }
 
 
+        [HttpPut("BookAppointment")]
+
+        public IActionResult PutAppointment(Appointment appointment, string Id)
+        {
+            var dep = db.Appointment.FirstOrDefault(x => x.DoctorId == Id);
+            db.Appointment.Update(dep);
+            db.SaveChanges();
+            return Ok();
+        }
+
         [HttpPost("BookAppointment")]
-        [Authorize("Patient")]
+     
         public IActionResult BookAppointment(Appointment appointment)
         {
             db.Appointment.Add(appointment);
             db.SaveChanges();
             return Ok();
         }
+
+        [HttpPost("BookAppointment/{Id}")]
+
+        public IActionResult BookAppointment(string Id)
+        {
+
+            var dep = db.Doctor.Where(x => x.DoctorId == Id);
+           
+            
+            db.Update(dep);
+            db.SaveChanges();
+            return Ok();
+        }
+
+
+     
+        
+        [HttpGet("GetDoctors")]
+        public IActionResult GetDoctors()
+        {
+            var dep = db.Doctor;
+            return Ok(dep);
+        }
+
 
 
         [AllowAnonymous]

@@ -44,11 +44,25 @@ namespace PMSAPI.Controllers
             return Ok(dep);
         }
 
-        [HttpGet]
-        public IActionResult Get()
+        [HttpGet("GetPatients")]
+        public IActionResult GetPatients()
         {
             
-            return Ok(db.Doctor);
+            return Ok(db.Patient);
+        }
+
+        [HttpGet("GetAppointment")]
+        public IActionResult GetAppointment()
+        {
+            
+            return Ok(db.Appointment);
+        }
+
+     
+        public IActionResult GetPatient(string Search)
+        {
+            var dep = db.Patient.Where(x => x.PatientId.StartsWith(Search) || Search == null).ToList();
+            return Ok(dep);
         }
 
 

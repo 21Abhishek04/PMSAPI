@@ -31,7 +31,8 @@ namespace PMSAPI.Models
             if (!optionsBuilder.IsConfigured)
             {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-                optionsBuilder.UseSqlServer("Server=ABHIS;Database=PMSWEB;Trusted_Connection=True;");
+                optionsBuilder.UseSqlServer(@"Server=ABHIS;Database=PMSWEB;
+Trusted_Connection=True;");
             }
         }
 
@@ -39,13 +40,11 @@ namespace PMSAPI.Models
         {
             modelBuilder.Entity<Appointment>(entity =>
             {
-                entity.HasNoKey();
+                entity.Property(e => e.AppointmentId).HasColumnName("AppointmentID");
 
-                entity.Property(e => e.AppointmentDate).HasColumnType("datetime");
-
-                entity.Property(e => e.AppointmentId)
-                    .HasColumnName("AppointmentID")
-                    .ValueGeneratedOnAdd();
+                entity.Property(e => e.AppointmentDate)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
 
                 entity.Property(e => e.ConsultationFees)
                     .HasColumnName("Consultation_Fees")
@@ -65,19 +64,19 @@ namespace PMSAPI.Models
                     .IsUnicode(false);
 
                 entity.HasOne(d => d.Department)
-                    .WithMany()
+                    .WithMany(p => p.Appointment)
                     .HasForeignKey(d => d.DepartmentId)
-                    .HasConstraintName("FK__Appointme__Depar__74AE54BC");
+                    .HasConstraintName("FK__Appointme__Depar__17036CC0");
 
                 entity.HasOne(d => d.Doctor)
-                    .WithMany()
+                    .WithMany(p => p.Appointment)
                     .HasForeignKey(d => d.DoctorId)
-                    .HasConstraintName("FK__Appointme__Docto__75A278F5");
+                    .HasConstraintName("FK__Appointme__Docto__17F790F9");
 
                 entity.HasOne(d => d.Patient)
-                    .WithMany()
+                    .WithMany(p => p.Appointment)
                     .HasForeignKey(d => d.PatientId)
-                    .HasConstraintName("FK__Appointme__Patie__73BA3083");
+                    .HasConstraintName("FK__Appointme__Patie__160F4887");
             });
 
             modelBuilder.Entity<BloodGroups>(entity =>
